@@ -1,0 +1,6 @@
+@gaiacabinet_api_HostAddress = http://localhost:5111
+
+GET {{gaiacabinet_api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
