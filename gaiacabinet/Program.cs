@@ -1,6 +1,7 @@
 using DotNetEnv;
 using gaiacabinet_api.Database;
 using Microsoft.EntityFrameworkCore;
+using gaiacabinet_api.Services;
 
 namespace gaiacabinet_api;
 
@@ -17,6 +18,8 @@ public class Program
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
         
+        // Injection de dépendance
+        builder.Services.AddScoped<AuthServices>();
         // Connexion à la Base de donnée
         var DbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
         if (string.IsNullOrEmpty(DbConnectionString))

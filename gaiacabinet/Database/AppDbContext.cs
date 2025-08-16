@@ -38,7 +38,9 @@ public class AppDbContext : DbContext
             e.Property(x => x.Phone).HasMaxLength(50).IsRequired();
             e.Property(x => x.PasswordHash).HasMaxLength(200).IsRequired();
             e.Property(x => x.OrdreRegistrationNumber).HasMaxLength(20);
-            e.Property(x => x.Authorized).HasDefaultValue(true);
+            e.Property(x => x.CreatedAt).IsRequired().HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            e.Property(x => x.UpdatedAt).IsRequired().HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            e.Property(x => x.Authorized).IsRequired().HasDefaultValue(true);
             
             e.HasIndex(x => x.Mail).IsUnique();
             e.HasIndex(x => x.Phone).IsUnique();
@@ -50,8 +52,14 @@ public class AppDbContext : DbContext
         {
             e.HasKey(x => x.PendingUserId);
             e.Property(x => x.Mail).HasMaxLength(250).IsRequired();
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            e.Property(x => x.ConsumedAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             e.Property(x => x.VerificationCodeHash).HasMaxLength(128);
+            e.Property(x => x.Attempts).HasDefaultValue(0);
             e.Property(x => x.IsActive).HasDefaultValue(true);
+            e.Property(x => x.ExpiresAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC' + INTERVAL '7 days'");
+
+            
 
             e.HasIndex(x => new { x.Mail, x.IsActive }).IsUnique();
 
