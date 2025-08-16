@@ -38,6 +38,14 @@ public class Program
         app.UseAuthorization();
 
         app.MapControllers();
+        
+        //Lancement du seeder pour les données utile en Dev
+        if (app.Environment.IsDevelopment())
+        {
+            using var scope = app.Services.CreateScope();
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            DataSeeder.SeedDevelopmentData(db);
+        }
 
         app.Run();
     }
