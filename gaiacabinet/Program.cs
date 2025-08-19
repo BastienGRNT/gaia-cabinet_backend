@@ -19,7 +19,8 @@ public class Program
         builder.Services.AddSwaggerGen();
         
         // Injection de dépendance
-        builder.Services.AddScoped<AuthServices>();
+        builder.Services.AddSingleton<IClock, SystemClock>();
+        builder.Services.AddScoped<IAuthServices, AuthServices>();
         // Connexion à la Base de donnée
         var DbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
         if (string.IsNullOrEmpty(DbConnectionString))
