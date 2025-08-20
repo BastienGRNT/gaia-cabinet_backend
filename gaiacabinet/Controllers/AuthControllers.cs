@@ -1,6 +1,8 @@
 ﻿using gaiacabinet_api.Contracts;
+using gaiacabinet_api.Contracts.Errors;
 using gaiacabinet_api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Options;
 
 namespace gaiacabinet_api.Controllers;
 
@@ -8,7 +10,13 @@ namespace gaiacabinet_api.Controllers;
 public class AuthController : ControllerBase
 {
     private readonly IAuthServices _auth;
-    public AuthController(IAuthServices  auth) => _auth = auth;
+    private readonly AuthJwtOptions _jwt;
+
+    public AuthController(IAuthServices auth, IOptions<AuthJwtOptions> jwtOptions)
+    {
+        _auth = auth;
+        _jwt = jwtOptions.Value;
+    }
 
     [HttpPost("lookup")]
     [ProducesResponseType(typeof(LookupResponse), StatusCodes.Status200OK)]
@@ -34,4 +42,78 @@ public class AuthController : ControllerBase
         
         return Ok(reponse);
     }
+    
+    [HttpPost("login")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> Login([FromBody] LoginRequest request, CancellationToken ct)
+    {
+        // Validation "front-friendly"
+        if (!ModelState.IsValid)
+        {
+            var details = ModelState
+                .Where(kv => kv.Value?.Errors.Count > 0)
+                .Select(kv => new ApiErrorDetail { Field = kv.Key, Message = kv.Value!.Errors[0].ErrorMessage })
+                .ToList();
+
+            return BadRequest(new ApiErrorResponse
+            {
+                Error = new ApiError { Code = "validation_failed", Message = "Données invalides." },
+                Details = details,
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+
+        try
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ua = Request.Headers.UserAgent.ToString();
+
+            var result = await _auth.LoginAsync(request.Email, request.Password, ip ?? string.Empty, ua, ct);
+
+            // Cookie refresh token (HttpOnly)
+            Response.Cookies.Append("rt", result.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                // Si front sur un autre domaine : SameSite=None (et HTTPS obligatoire)
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays),
+                Path = "/api/v1/auth"
+            });
+
+            return Ok(new LoginResponse
+            {
+                AccessToken = result.AccessToken,
+                TokenType = "Bearer"
+            });
+        }
+        catch (UnauthorizedAccessException ex) when (ex.Message == "invalid_credentials")
+        {
+            return Unauthorized(new ApiErrorResponse
+            {
+                Error = new ApiError { Code = "invalid_credentials", Message = "Identifiants invalides." },
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+        catch (UnauthorizedAccessException ex) when (ex.Message == "not_authorized")
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiErrorResponse
+            {
+                Error = new ApiError { Code = "forbidden", Message = "Accès refusé." },
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+        catch (Exception)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiErrorResponse
+            {
+                Error = new ApiError { Code = "server_error", Message = "Une erreur est survenue." },
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+    }
+
 }

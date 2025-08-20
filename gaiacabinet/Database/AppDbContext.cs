@@ -12,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<User> Users => Set<User>();
     public DbSet<PendingUser> PendingUsers => Set<PendingUser>();
+    public DbSet<RefreshSession> RefreshSessions => Set<RefreshSession>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -36,7 +37,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.LastName).HasMaxLength(50).IsRequired();
             e.Property(x => x.Mail).HasMaxLength(250).IsRequired();
             e.Property(x => x.Phone).HasMaxLength(50).IsRequired();
-            e.Property(x => x.PasswordHash).HasMaxLength(200).IsRequired();
+            e.Property(x => x.PasswordHash).HasMaxLength(256).IsRequired();
             e.Property(x => x.OrdreRegistrationNumber).HasMaxLength(20);
             e.Property(x => x.CreatedAt).IsRequired().HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             e.Property(x => x.UpdatedAt).IsRequired().HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
@@ -74,6 +75,24 @@ public class AppDbContext : DbContext
                 .WithMany()
                 .HasForeignKey(x => x.InvitedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<RefreshSession>(e =>
+        {
+            e.HasKey(x => x.SessionId);
+            e.Property(x => x.TokenHash).HasMaxLength(256).IsRequired();
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            e.Property(x => x.ExpiresAt).IsRequired();
+            e.Property(x => x.RevokedAt);
+            e.Property(x => x.IpAddress).HasMaxLength(200);
+            e.Property(x => x.UserAgent).HasMaxLength(400);
+            
+            e.HasIndex(x => x.TokenHash).IsUnique();
+
+            e.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 }
