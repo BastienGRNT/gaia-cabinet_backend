@@ -52,9 +52,7 @@ public sealed class TokenService : ITokenService
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
-            new(JwtRegisteredClaimNames.Email, user.Mail),
             new(ClaimTypes.Role, user.Role?.Label ?? "user"),
-            new Claim("role", user.Role?.Label ?? "user"),
             new(JwtRegisteredClaimNames.Iat, now.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64)
         };
 

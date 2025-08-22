@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 
 namespace gaiacabinet_api.Controllers;
 
+[Produces("application/json")]
 [ApiController, Route("/api/v1/auth")]
 public class AuthController : ControllerBase
 {
@@ -20,11 +21,23 @@ public class AuthController : ControllerBase
 
     [HttpPost("lookup")]
     [ProducesResponseType(typeof(LookupResponse), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> LookupAsync([FromBody] LookupRequest request, CancellationToken ct)
     {
         if (!ModelState.IsValid || string.IsNullOrWhiteSpace(request.Email))
-            return ValidationProblem(ModelState);
+        {
+            var details = ModelState
+                .Where(kv => kv.Value?.Errors.Count > 0)
+                .Select(kv => new ApiErrorDetail { Field = kv.Key, Message = kv.Value!.Errors[0].ErrorMessage })
+                .ToList();
+
+            return BadRequest(new ApiErrorResponse
+            {
+                Error = new ApiError { Code = "validation_failed", Message = "Données invalides." },
+                Details = details,
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
         
         var result = await _auth.LookupAsync(request.Email, ct);
 
@@ -110,6 +123,62 @@ public class AuthController : ControllerBase
         {
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiErrorResponse
             {
+                Error = new ApiError { Code = "server_error", Message = "Une erreur est survenue." },
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+    }
+
+    [HttpPost("refresh")]
+    [ProducesResponseType(typeof(LoginResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Verify(CancellationToken ct)
+    {
+        var rt = Request.Cookies["rt"];
+        if (string.IsNullOrWhiteSpace(rt))
+            return Unauthorized(new ApiErrorResponse {
+                Error = new ApiError { Code = "invalid_refresh_token", Message = "Refresh token manquant." },
+                TraceId = HttpContext.TraceIdentifier
+            });
+
+        try
+        {
+            var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+            var ua = Request.Headers.UserAgent.ToString();
+
+            var result = await _auth.RefreshAsync(rt, ip ?? string.Empty, ua, ct);
+
+            // 2) Poser le **nouveau** refresh token (rotation)
+            Response.Cookies.Append("rt", result.RefreshToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Lax, // si front ≠ domaine: None + HTTPS
+                Expires = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays),
+                Path = "/api/v1/auth"
+            });
+
+            return Ok(new LoginResponse { AccessToken = result.AccessToken, TokenType = "Bearer" });
+        }
+        catch (UnauthorizedAccessException ex) when (ex.Message is "invalid_refresh_token" or "expired_refresh_token" or "revoked_refresh_token")
+        {
+            Response.Cookies.Delete("rt", new CookieOptions { Path = "/api/v1/auth" });
+
+            return Unauthorized(new ApiErrorResponse {
+                Error = new ApiError { Code = ex.Message, Message = "Refresh token invalide." },
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+        catch (UnauthorizedAccessException ex) when (ex.Message == "not_authorized")
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new ApiErrorResponse {
+                Error = new ApiError { Code = "forbidden", Message = "Accès refusé." },
+                TraceId = HttpContext.TraceIdentifier
+            });
+        }
+        catch
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, new ApiErrorResponse {
                 Error = new ApiError { Code = "server_error", Message = "Une erreur est survenue." },
                 TraceId = HttpContext.TraceIdentifier
             });

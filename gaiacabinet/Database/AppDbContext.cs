@@ -86,7 +86,6 @@ public class AppDbContext : DbContext
             e.Property(x => x.RevokedAt);
             e.Property(x => x.IpAddress).HasMaxLength(200);
             e.Property(x => x.UserAgent).HasMaxLength(400);
-            
             e.HasIndex(x => x.TokenHash).IsUnique();
 
             e.HasOne(x => x.User)

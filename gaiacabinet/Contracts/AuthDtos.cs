@@ -33,3 +33,4 @@ public sealed class LoginResponse
     public string AccessToken { get; init; } = string.Empty;
     public string TokenType { get; init; } = string.Empty;
 }
+

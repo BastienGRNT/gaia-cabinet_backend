@@ -23,6 +23,7 @@ public class Program
         builder.Services.AddSingleton<IClock, SystemClock>();
         builder.Services.AddScoped<IAuthServices, AuthServices>();
         builder.Services.AddScoped<ITokenService, TokenService>();
+        builder.Services.AddScoped<IUserService, UserService>();
         // Connexion à la Base de donnée
         var DbConnectionString = Environment.GetEnvironmentVariable("DB_CONNECTION_STRING");
         if (string.IsNullOrEmpty(DbConnectionString))
@@ -55,21 +56,36 @@ public class Program
                     ClockSkew = TimeSpan.Zero
                 };
             });
+        
+        builder.Services.AddControllers()
+            .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.PropertyNamingPolicy = null; // ou camelCase
+            });
 
         builder.Services.AddAuthorization();
         
+        builder.Services.AddCors(o => o.AddPolicy("FrontDev", p =>
+            p.WithOrigins("http://localhost:3000")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials()
+        ));
+        
         var app = builder.Build();
 
+        app.UseCors("FrontDev");
+        app.UseHttpsRedirection();
+        app.UseAuthentication();
+        app.UseAuthorization();
+
+        
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
             app.UseSwaggerUI();
         }
-
-        app.UseHttpsRedirection();
-
-        app.UseAuthentication();
-        app.UseAuthorization();
+        
 
         app.MapControllers();
         

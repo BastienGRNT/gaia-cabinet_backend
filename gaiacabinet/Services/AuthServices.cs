@@ -42,11 +42,24 @@ public sealed record LoginResult
     }
 }
 
+public sealed record RefreshResult
+{
+    public string AccessToken;
+    public string RefreshToken;
+
+    public RefreshResult(string accessToken, string refreshToken)
+    {
+        AccessToken = accessToken;
+        RefreshToken = refreshToken;
+    }
+}
+
 
 public interface IAuthServices
 {
     Task<LookupResult> LookupAsync(string email, CancellationToken ct);
     Task<LoginResult> LoginAsync(string email, string password, string ip, string userAcces, CancellationToken ct);
+    Task<RefreshResult> RefreshAsync(string refreshToken, string ip, string userAgent, CancellationToken ct);
 }
 
 public sealed class AuthServices : IAuthServices
@@ -93,7 +106,7 @@ public sealed class AuthServices : IAuthServices
                 p => EF.Functions.ILike(p.Mail, normalized)
                      && p.IsActive
                      && p.ExpiresAt > _clock.UtcNow
-                     && p.ConsumedAt != null,
+                     && p.ConsumedAt == null,
                 ct);
 
         if (pending is not null)
@@ -137,7 +150,7 @@ public sealed class AuthServices : IAuthServices
         var accessToken = _jwtService.GenerateAccessToken(user);
 
         var refreshToken = _jwtService.GenerateRefreshToken();
-        var refreshHash = BCrypt.Net.BCrypt.HashPassword(refreshToken);
+        var refreshHash = _jwtService.HashToken(refreshToken);
         var refreshExpiration = _clock.UtcNow.AddDays(_jwt.RefreshTokenDays);
 
         _db.RefreshSessions.Add(new RefreshSession
@@ -151,5 +164,11 @@ public sealed class AuthServices : IAuthServices
         await _db.SaveChangesAsync(ct);
         
         return new LoginResult(accessToken, refreshToken);
+    }
+
+    public async Task<RefreshResult> RefreshAsync(string refreshToken, string ip, string userAgent, CancellationToken ct)
+    {
+        var pair = await _jwtService.VerifyAndRotateAsync(refreshToken, ip, userAgent, ct);
+        return new RefreshResult(pair.AccessToken, pair.RefreshToken);
     }
 }
