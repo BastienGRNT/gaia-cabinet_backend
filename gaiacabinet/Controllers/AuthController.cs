@@ -1,6 +1,7 @@
 ﻿using gaiacabinet_api.Contracts;
 using gaiacabinet_api.Contracts.Errors;
-using gaiacabinet_api.Services;
+using gaiacabinet_api.Interfaces;
+using gaiacabinet_api.Options;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 

@@ -1,4 +1,4 @@
-﻿namespace gaiacabinet_api.Services;
+﻿namespace gaiacabinet_api.Options;
 
 public sealed class AuthJwtOptions
 {

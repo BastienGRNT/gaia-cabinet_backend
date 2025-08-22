@@ -1,66 +1,14 @@
-﻿using System.Security.Cryptography;
+﻿using gaiacabinet_api.Common;
 using gaiacabinet_api.Contracts;
 using gaiacabinet_api.Database;
+using gaiacabinet_api.Interfaces;
 using gaiacabinet_api.Models;
+using gaiacabinet_api.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
 namespace gaiacabinet_api.Services;
 
-// Horloge injectable (meilleure testabilité que DateTimeOffset.UtcNow)
-public interface IClock
-{
-    DateTimeOffset UtcNow { get; }
-}
-
-public sealed class SystemClock : IClock
-{
-    public DateTimeOffset UtcNow => DateTimeOffset.UtcNow;
-}
-
-public sealed record LookupResult
-{
-    public string Status;
-    public Role? Role;
-
-    public LookupResult(string status, Role? role)
-    {
-        Status = status;
-        Role = role;
-    }
-}
-
-public sealed record LoginResult
-{
-    public string AccessToken;
-    public string RefreshToken;
-
-    public LoginResult(string accessToken, string refreshToken)
-    {
-        AccessToken = accessToken;
-        RefreshToken = refreshToken;
-    }
-}
-
-public sealed record RefreshResult
-{
-    public string AccessToken;
-    public string RefreshToken;
-
-    public RefreshResult(string accessToken, string refreshToken)
-    {
-        AccessToken = accessToken;
-        RefreshToken = refreshToken;
-    }
-}
-
-
-public interface IAuthServices
-{
-    Task<LookupResult> LookupAsync(string email, CancellationToken ct);
-    Task<LoginResult> LoginAsync(string email, string password, string ip, string userAcces, CancellationToken ct);
-    Task<RefreshResult> RefreshAsync(string refreshToken, string ip, string userAgent, CancellationToken ct);
-}
 
 public sealed class AuthServices : IAuthServices
 {
@@ -76,21 +24,14 @@ public sealed class AuthServices : IAuthServices
         _jwt = jwtOptions.Value;
         _jwtService = jwtService;
     }
-
-    private static string NormalizeEmail(string email) => email.Trim().ToLowerInvariant();
     
-    public static string GenerateVerificationCode()
-    {
-        var number = RandomNumberGenerator.GetInt32(0, 1_000_000); 
-        return number.ToString("D6");
-    }
-
+    // Vérifier si un mail est en whiteliste
     public async Task<LookupResult> LookupAsync(string email, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(email))
             return new LookupResult(LookupStatus.Unknown, null);
 
-        var normalized = NormalizeEmail(email);
+        var normalized = EmailUtils.Normalize(email);
         
         var userExists = await _db.Users
             .AsNoTracking()
@@ -111,7 +52,7 @@ public sealed class AuthServices : IAuthServices
 
         if (pending is not null)
         {
-            var code = GenerateVerificationCode();
+            var code = VerificationCodeService.GenerateVerificationCode();
             var hash = BCrypt.Net.BCrypt.HashPassword(code);
 
             await _db.PendingUsers
@@ -130,9 +71,10 @@ public sealed class AuthServices : IAuthServices
         return new LookupResult(LookupStatus.Unknown, null);
     }
 
+    // Méthode utiliiser pour se connecter
     public async Task<LoginResult> LoginAsync(string email, string password, string ip, string userAgent, CancellationToken ct)
     {
-        var normalized = NormalizeEmail(email);
+        var normalized = EmailUtils.Normalize(email);
         
         var user = await _db.Users
             .Include(p => p.Role)
@@ -150,7 +92,7 @@ public sealed class AuthServices : IAuthServices
         var accessToken = _jwtService.GenerateAccessToken(user);
 
         var refreshToken = _jwtService.GenerateRefreshToken();
-        var refreshHash = _jwtService.HashToken(refreshToken);
+        var refreshHash = TokenUtils.HashToken(refreshToken);
         var refreshExpiration = _clock.UtcNow.AddDays(_jwt.RefreshTokenDays);
 
         _db.RefreshSessions.Add(new RefreshSession
@@ -166,9 +108,11 @@ public sealed class AuthServices : IAuthServices
         return new LoginResult(accessToken, refreshToken);
     }
 
+    // Méthode utiliser pour Rafraichir un token
     public async Task<RefreshResult> RefreshAsync(string refreshToken, string ip, string userAgent, CancellationToken ct)
     {
         var pair = await _jwtService.VerifyAndRotateAsync(refreshToken, ip, userAgent, ct);
         return new RefreshResult(pair.AccessToken, pair.RefreshToken);
     }
+    
 }

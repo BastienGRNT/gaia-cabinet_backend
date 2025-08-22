@@ -1,39 +1,24 @@
-﻿// File: Services/TokenService.cs
-using System.IdentityModel.Tokens.Jwt;
+﻿using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
+using gaiacabinet_api.Common;
 using gaiacabinet_api.Database;
+using gaiacabinet_api.Interfaces;
 using gaiacabinet_api.Models;
+using gaiacabinet_api.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 namespace gaiacabinet_api.Services;
 
-public sealed record TokenPair(
-    string AccessToken,
-    string RefreshToken
-);
-
-public interface ITokenService
-{
-    string GenerateAccessToken(User user);
-    string GenerateRefreshToken();
-    string HashToken(string token);
-    Task<TokenPair> VerifyAndRotateAsync(
-        string refreshToken,
-        string? ip,
-        string? userAgent,
-        CancellationToken ct);
-}
-
 public sealed class TokenService : ITokenService
 {
     private readonly AppDbContext _db;
     private readonly IClock _clock;
     private readonly AuthJwtOptions _jwt;
-
+    
     public TokenService(AppDbContext db, IClock clock, IOptions<AuthJwtOptions> jwtOptions)
     {
         _db = db;
@@ -41,14 +26,16 @@ public sealed class TokenService : ITokenService
         _jwt = jwtOptions.Value;
     }
 
+    // Methode de géneration d'un AccessToken
     public string GenerateAccessToken(User user)
     {
+        //Récuperer la clé secrète dans la class JwtOptions
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwt.SigningKey));
         var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var now = _clock.UtcNow;
         var expires = now.AddMinutes(_jwt.AccessTokenMinutes);
-
+        
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Sub, user.UserId.ToString()),
@@ -68,26 +55,29 @@ public sealed class TokenService : ITokenService
         return (token);
     }
 
+    // Méthode de genreation d'un RefreshToken
     public string GenerateRefreshToken()
     {
         Span<byte> bytes = stackalloc byte[32];
         RandomNumberGenerator.Fill(bytes);
-        return Base64UrlEncode(bytes);
+        return TokenUtils.Base64UrlEncode(bytes);
     }
 
+    // Méthode de Hash utiliser pour ajouter le RefreshTokenHash en BDD
     public string HashToken(string token)
     {
         var data = Encoding.UTF8.GetBytes(token);
         return Convert.ToHexString(SHA256.HashData(data));
     }
 
-    public async Task<TokenPair> VerifyAndRotateAsync(string refreshToken, string? ip, string? userAgent, CancellationToken ct)
+    // Méthode pour vérifier un RefreshToken et en créer un nouveau si il est bon
+    public async Task<VerifyAndRotateResult> VerifyAndRotateAsync(string refreshToken, string? ip, string? userAgent, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
             throw new UnauthorizedAccessException("invalid_refresh_token");
 
         var now = _clock.UtcNow;
-        var incomingHash = HashToken(refreshToken);
+        var incomingHash = TokenUtils.HashToken(refreshToken);
 
         var session = await _db.RefreshSessions
             .Include(s => s.User).ThenInclude(u => u.Role)
@@ -110,7 +100,7 @@ public sealed class TokenService : ITokenService
 
         // 4) Rotation du refresh : créer un nouveau RT, enregistrer, révoquer l’ancien
         var newRt = GenerateRefreshToken();
-        var newRtHash = HashToken(newRt);
+        var newRtHash = TokenUtils.HashToken(newRt);
         var newRtExp = now.AddDays(_jwt.RefreshTokenDays);
 
         // Marquer l'ancien comme révoqué + chainage
@@ -128,9 +118,8 @@ public sealed class TokenService : ITokenService
 
         await _db.SaveChangesAsync(ct);
 
-        return new TokenPair(newAccess, newRt);
+        return new VerifyAndRotateResult(newAccess, newRt);
     }
 
-    private static string Base64UrlEncode(ReadOnlySpan<byte> bytes)
-        => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
+    
 }

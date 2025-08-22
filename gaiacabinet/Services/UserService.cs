@@ -34,7 +34,11 @@ public class UserService : IUserService
             LastName = user.LastName,
             Email = user.Mail,
             Phone = user.Phone,
-            Role = user.Role.Label
+            Role = new RoleDto
+            {
+                RoleId = user.Role.RoleId,
+                Label = user.Role.Label,
+            }
         };
     }
 }
