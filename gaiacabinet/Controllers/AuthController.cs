@@ -97,6 +97,15 @@ public class AuthController : ControllerBase
                 Expires = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays),
                 Path = "/api/v1/auth"
             });
+            
+            Response.Cookies.Append("skey", result.SessionKey, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.Lax,
+                Expires = DateTimeOffset.UtcNow.AddDays(_jwt.RefreshTokenDays),
+                Path = "/api/v1/auth"
+            });
 
             return Ok(new LoginResponse
             {
@@ -141,13 +150,20 @@ public class AuthController : ControllerBase
                 Error = new ApiError { Code = "invalid_refresh_token", Message = "Refresh token manquant." },
                 TraceId = HttpContext.TraceIdentifier
             });
-
+        
+        var skey = Request.Cookies["skey"];
+        if (string.IsNullOrWhiteSpace(skey))
+            return Unauthorized(new ApiErrorResponse {
+                Error = new ApiError { Code = "invalid_session", Message = "Session key manquant." },
+                TraceId = HttpContext.TraceIdentifier
+            });
+        
         try
         {
             var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
             var ua = Request.Headers.UserAgent.ToString();
 
-            var result = await _auth.RefreshAsync(rt, ip ?? string.Empty, ua, ct);
+            var result = await _auth.RefreshAsync(rt, skey, ip ?? string.Empty, ua, ct);
 
             // 2) Poser le **nouveau** refresh token (rotation)
             Response.Cookies.Append("rt", result.RefreshToken, new CookieOptions
@@ -161,9 +177,10 @@ public class AuthController : ControllerBase
 
             return Ok(new LoginResponse { AccessToken = result.AccessToken, TokenType = "Bearer" });
         }
-        catch (UnauthorizedAccessException ex) when (ex.Message is "invalid_refresh_token" or "expired_refresh_token" or "revoked_refresh_token")
+        catch (UnauthorizedAccessException ex) when (ex.Message is "invalid_refresh_token" or "expired_refresh_token" or "revoked_refresh_token" or "invalid_session_key")
         {
             Response.Cookies.Delete("rt", new CookieOptions { Path = "/api/v1/auth" });
+            Response.Cookies.Delete("skey", new CookieOptions { Path = "/api/v1/auth" });
 
             return Unauthorized(new ApiErrorResponse {
                 Error = new ApiError { Code = ex.Message, Message = "Refresh token invalide." },
@@ -172,6 +189,9 @@ public class AuthController : ControllerBase
         }
         catch (UnauthorizedAccessException ex) when (ex.Message == "not_authorized")
         {
+            Response.Cookies.Delete("rt", new CookieOptions { Path = "/api/v1/auth" });
+            Response.Cookies.Delete("skey", new CookieOptions { Path = "/api/v1/auth" });
+            
             return StatusCode(StatusCodes.Status403Forbidden, new ApiErrorResponse {
                 Error = new ApiError { Code = "forbidden", Message = "Accès refusé." },
                 TraceId = HttpContext.TraceIdentifier
@@ -179,6 +199,9 @@ public class AuthController : ControllerBase
         }
         catch
         {
+            Response.Cookies.Delete("rt", new CookieOptions { Path = "/api/v1/auth" });
+            Response.Cookies.Delete("skey", new CookieOptions { Path = "/api/v1/auth" });
+            
             return StatusCode(StatusCodes.Status500InternalServerError, new ApiErrorResponse {
                 Error = new ApiError { Code = "server_error", Message = "Une erreur est survenue." },
                 TraceId = HttpContext.TraceIdentifier

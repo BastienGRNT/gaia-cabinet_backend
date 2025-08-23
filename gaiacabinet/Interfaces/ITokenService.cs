@@ -9,6 +9,7 @@ public interface ITokenService
     string HashToken(string token);
     Task<VerifyAndRotateResult> VerifyAndRotateAsync(
         string refreshToken,
+        string sessionKey,
         string? ip,
         string? userAgent,
         CancellationToken ct);

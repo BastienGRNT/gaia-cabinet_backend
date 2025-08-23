@@ -94,24 +94,27 @@ public sealed class AuthServices : IAuthServices
         var refreshToken = _jwtService.GenerateRefreshToken();
         var refreshHash = TokenUtils.HashToken(refreshToken);
         var refreshExpiration = _clock.UtcNow.AddDays(_jwt.RefreshTokenDays);
+        var sessionKey = Guid.NewGuid().ToString("N");
+        var sKeyHash = TokenUtils.HashToken(sessionKey);
 
-        _db.RefreshSessions.Add(new RefreshSession
+        var rs = _db.RefreshSessions.Add(new RefreshSession
         {
             UserId = user.UserId,
+            SessionKeyHash = sKeyHash,
             TokenHash = refreshHash,
             ExpiresAt = refreshExpiration,
-            IpAddress = ip,
-            UserAgent = userAgent
+            LastIp = ip,
+            LastUserAgent = userAgent
         });
         await _db.SaveChangesAsync(ct);
         
-        return new LoginResult(accessToken, refreshToken);
+        return new LoginResult(accessToken, refreshToken, sessionKey);
     }
 
     // Méthode utiliser pour Rafraichir un token
-    public async Task<RefreshResult> RefreshAsync(string refreshToken, string ip, string userAgent, CancellationToken ct)
+    public async Task<RefreshResult> RefreshAsync(string refreshToken, string sessionKey, string ip, string userAgent, CancellationToken ct)
     {
-        var pair = await _jwtService.VerifyAndRotateAsync(refreshToken, ip, userAgent, ct);
+        var pair = await _jwtService.VerifyAndRotateAsync(refreshToken, sessionKey, ip, userAgent, ct);
         return new RefreshResult(pair.AccessToken, pair.RefreshToken);
     }
     

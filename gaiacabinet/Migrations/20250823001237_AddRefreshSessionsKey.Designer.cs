@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using gaiacabinet_api.Database;
@@ -11,9 +12,11 @@ using gaiacabinet_api.Database;
 namespace gaiacabinet_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250823001237_AddRefreshSessionsKey")]
+    partial class AddRefreshSessionsKey
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -121,9 +124,6 @@ namespace gaiacabinet_api.Migrations
                     b.Property<DateTimeOffset?>("RevokedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int?>("RevokedByUserId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("SessionKeyHash")
                         .IsRequired()
                         .HasMaxLength(256)
@@ -143,8 +143,6 @@ namespace gaiacabinet_api.Migrations
                         .HasColumnType("integer");
 
                     b.HasKey("SessionId");
-
-                    b.HasIndex("RevokedByUserId");
 
                     b.HasIndex("TokenHash")
                         .IsUnique();
@@ -273,18 +271,11 @@ namespace gaiacabinet_api.Migrations
 
             modelBuilder.Entity("gaiacabinet_api.Models.RefreshSession", b =>
                 {
-                    b.HasOne("gaiacabinet_api.Models.User", "RevokedByUser")
-                        .WithMany()
-                        .HasForeignKey("RevokedByUserId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
                     b.HasOne("gaiacabinet_api.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("RevokedByUser");
 
                     b.Navigation("User");
                 });

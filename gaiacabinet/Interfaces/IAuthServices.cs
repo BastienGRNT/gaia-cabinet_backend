@@ -6,7 +6,7 @@ public interface IAuthServices
 {
     Task<LookupResult> LookupAsync(string email, CancellationToken ct);
     Task<LoginResult> LoginAsync(string email, string password, string ip, string userAcces, CancellationToken ct);
-    Task<RefreshResult> RefreshAsync(string refreshToken, string ip, string userAgent, CancellationToken ct);
+    Task<RefreshResult> RefreshAsync(string refreshToken, string sessionKey, string ip, string userAgent, CancellationToken ct);
 }
 
 public sealed record LookupResult
@@ -25,11 +25,13 @@ public sealed record LoginResult
 {
     public string AccessToken;
     public string RefreshToken;
-
-    public LoginResult(string accessToken, string refreshToken)
+    public string SessionKey;
+    
+    public LoginResult(string accessToken, string refreshToken, string sessionKey)
     {
         AccessToken = accessToken;
         RefreshToken = refreshToken;
+        SessionKey = sessionKey;
     }
 }
 

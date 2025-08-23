@@ -71,17 +71,23 @@ public sealed class TokenService : ITokenService
     }
 
     // Méthode pour vérifier un RefreshToken et en créer un nouveau si il est bon
-    public async Task<VerifyAndRotateResult> VerifyAndRotateAsync(string refreshToken, string? ip, string? userAgent, CancellationToken ct)
+    public async Task<VerifyAndRotateResult> VerifyAndRotateAsync(string refreshToken, string sessionKey, string? ip, string? userAgent, CancellationToken ct)
     {
         if (string.IsNullOrWhiteSpace(refreshToken))
             throw new UnauthorizedAccessException("invalid_refresh_token");
+        
+        if (string.IsNullOrWhiteSpace(sessionKey))
+            throw new UnauthorizedAccessException("invalid_session_key");
 
         var now = _clock.UtcNow;
         var incomingHash = TokenUtils.HashToken(refreshToken);
+        var incomingSessionKey = TokenUtils.HashToken(sessionKey);
 
         var session = await _db.RefreshSessions
             .Include(s => s.User).ThenInclude(u => u.Role)
-            .FirstOrDefaultAsync(s => s.TokenHash == incomingHash, ct);
+            .FirstOrDefaultAsync(s => s.TokenHash == incomingHash
+                && s.SessionKeyHash == incomingSessionKey
+                , ct);
 
         if (session is null)
             throw new UnauthorizedAccessException("invalid_refresh_token");
@@ -90,11 +96,25 @@ public sealed class TokenService : ITokenService
             throw new UnauthorizedAccessException("revoked_refresh_token");
 
         if (session.ExpiresAt <= now)
+        {
+            await _db.RefreshSessions
+                .Where(s => s.SessionId == session.SessionId && s.RevokedAt == null)
+                .ExecuteUpdateAsync(set => set
+                    .SetProperty(x => x.RevokedAt, now), ct);
+        
             throw new UnauthorizedAccessException("expired_refresh_token");
-
+        }
+        
         var user = session.User;
         if (user is null || !user.Authorized)
+        {
+            await _db.RefreshSessions
+                .Where(s => s.SessionId == session.SessionId && s.RevokedAt == null)
+                .ExecuteUpdateAsync(set => set
+                    .SetProperty(x => x.RevokedAt, now), ct);
+            
             throw new UnauthorizedAccessException("not_authorized");
+        }
 
         var newAccess = GenerateAccessToken(user);
 
@@ -102,22 +122,25 @@ public sealed class TokenService : ITokenService
         var newRt = GenerateRefreshToken();
         var newRtHash = TokenUtils.HashToken(newRt);
         var newRtExp = now.AddDays(_jwt.RefreshTokenDays);
-
-        // Marquer l'ancien comme révoqué + chainage
-        session.RevokedAt = now;
-
-        // Créer la nouvelle session
-        _db.RefreshSessions.Add(new RefreshSession
-        {
-            UserId = user.UserId,
-            TokenHash = newRtHash,
-            ExpiresAt = newRtExp,
-            IpAddress = ip,
-            UserAgent = userAgent
-        });
-
-        await _db.SaveChangesAsync(ct);
-
+        
+        
+        var updated = await _db.RefreshSessions
+            .Where(s => s.SessionKeyHash == incomingSessionKey
+                && s.TokenHash == incomingHash
+                && s.RevokedAt == null
+                && s.ExpiresAt > now)
+            .ExecuteUpdateAsync(set => set
+                .SetProperty(x => x.TokenHash, newRtHash)
+                .SetProperty(x => x.ExpiresAt, newRtExp)
+                .SetProperty(x => x.UpdatedAt, now)
+                .SetProperty(x => x.LastSeenAt, now)
+                .SetProperty(x => x.LastIp, x => string.IsNullOrWhiteSpace(ip) ? x.LastIp : ip)
+                .SetProperty(x => x.LastUserAgent, x => string.IsNullOrWhiteSpace(userAgent) ? x.LastUserAgent : userAgent)
+            , ct);
+        
+        if (updated == 0)
+            throw new UnauthorizedAccessException("not_authorized");
+        
         return new VerifyAndRotateResult(newAccess, newRt);
     }
 
