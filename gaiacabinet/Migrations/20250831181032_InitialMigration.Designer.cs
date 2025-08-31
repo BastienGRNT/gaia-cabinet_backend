@@ -12,8 +12,8 @@ using gaiacabinet_api.Database;
 namespace gaiacabinet_api.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20250816002935_InitialCreate1")]
-    partial class InitialCreate1
+    [Migration("20250831181032_InitialMigration")]
+    partial class InitialMigration
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -23,6 +23,7 @@ namespace gaiacabinet_api.Migrations
                 .HasAnnotation("ProductVersion", "9.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
+            NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "citext");
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("gaiacabinet_api.Models.PendingUser", b =>
@@ -34,7 +35,9 @@ namespace gaiacabinet_api.Migrations
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("PendingUserId"));
 
                     b.Property<int>("Attempts")
-                        .HasColumnType("integer");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
 
                     b.Property<DateTimeOffset?>("ConsumedAt")
                         .HasColumnType("timestamp with time zone");
@@ -42,12 +45,17 @@ namespace gaiacabinet_api.Migrations
                     b.Property<DateTimeOffset>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValue(new DateTimeOffset(new DateTime(2025, 8, 16, 0, 29, 35, 471, DateTimeKind.Unspecified).AddTicks(288), new TimeSpan(0, 0, 0, 0, 0)));
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("citext");
 
                     b.Property<DateTimeOffset>("ExpiresAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValue(new DateTimeOffset(new DateTime(2025, 8, 26, 2, 29, 35, 469, DateTimeKind.Unspecified).AddTicks(1982), new TimeSpan(0, 2, 0, 0, 0)));
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC' + INTERVAL '15 days'");
 
                     b.Property<int>("InvitedByUserId")
                         .HasColumnType("integer");
@@ -57,13 +65,26 @@ namespace gaiacabinet_api.Migrations
                         .HasColumnType("boolean")
                         .HasDefaultValue(true);
 
-                    b.Property<string>("Mail")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
                     b.Property<int>("RoleId")
                         .HasColumnType("integer");
+
+                    b.Property<DateTimeOffset?>("UnlockAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<DateTimeOffset?>("ValidateTokenCreation")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ValidateTokenExpiration")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ValidateTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.Property<DateTimeOffset?>("VerificationCodeCreation")
                         .HasColumnType("timestamp with time zone");
@@ -72,23 +93,84 @@ namespace gaiacabinet_api.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("VerificationCodeHash")
-                        .IsRequired()
-                        .HasMaxLength(128)
-                        .HasColumnType("character varying(128)");
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
 
                     b.HasKey("PendingUserId");
 
-                    b.HasIndex("InvitedByUserId");
-
-                    b.HasIndex("Mail")
+                    b.HasIndex("Email")
                         .IsUnique();
+
+                    b.HasIndex("InvitedByUserId");
 
                     b.HasIndex("RoleId");
 
-                    b.HasIndex("Mail", "IsActive")
+                    b.ToTable("PendingUsers");
+                });
+
+            modelBuilder.Entity("gaiacabinet_api.Models.RefreshSession", b =>
+                {
+                    b.Property<int>("SessionId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("SessionId"));
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<DateTimeOffset>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LastIp")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTimeOffset?>("LastSeenAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<string>("LastUserAgent")
+                        .HasMaxLength(400)
+                        .HasColumnType("character varying(400)");
+
+                    b.Property<DateTimeOffset?>("RevokedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("RevokedByUserId")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("SessionKeyHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("SessionId");
+
+                    b.HasIndex("RevokedByUserId");
+
+                    b.HasIndex("TokenHash")
                         .IsUnique();
 
-                    b.ToTable("PendingUsers");
+                    b.HasIndex("UserId");
+
+                    b.ToTable("RefreshSessions");
                 });
 
             modelBuilder.Entity("gaiacabinet_api.Models.Role", b =>
@@ -126,10 +208,17 @@ namespace gaiacabinet_api.Migrations
                         .HasDefaultValue(true);
 
                     b.Property<DateTimeOffset>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
                     b.Property<short?>("DaysAdvance")
                         .HasColumnType("smallint");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasMaxLength(250)
+                        .HasColumnType("citext");
 
                     b.Property<string>("FirstName")
                         .IsRequired()
@@ -144,19 +233,14 @@ namespace gaiacabinet_api.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<string>("Mail")
-                        .IsRequired()
-                        .HasMaxLength(250)
-                        .HasColumnType("character varying(250)");
-
                     b.Property<string>("OrdreRegistrationNumber")
                         .HasMaxLength(20)
                         .HasColumnType("character varying(20)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
+                        .HasMaxLength(256)
+                        .HasColumnType("character varying(256)");
 
                     b.Property<string>("Phone")
                         .IsRequired()
@@ -167,11 +251,13 @@ namespace gaiacabinet_api.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("timestamp with time zone")
+                        .HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
 
                     b.HasKey("UserId");
 
-                    b.HasIndex("Mail")
+                    b.HasIndex("Email")
                         .IsUnique();
 
                     b.HasIndex("OrdreRegistrationNumber")
@@ -202,6 +288,24 @@ namespace gaiacabinet_api.Migrations
                     b.Navigation("InvitedByUser");
 
                     b.Navigation("Role");
+                });
+
+            modelBuilder.Entity("gaiacabinet_api.Models.RefreshSession", b =>
+                {
+                    b.HasOne("gaiacabinet_api.Models.User", "RevokedByUser")
+                        .WithMany()
+                        .HasForeignKey("RevokedByUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("gaiacabinet_api.Models.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RevokedByUser");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("gaiacabinet_api.Models.User", b =>

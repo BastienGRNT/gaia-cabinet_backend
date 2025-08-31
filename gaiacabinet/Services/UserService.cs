@@ -32,7 +32,7 @@ public class UserService : IUserService
             UserId = user.UserId,
             FirstName = user.FirstName,
             LastName = user.LastName,
-            Email = user.Mail,
+            Email = user.Email,
             Phone = user.Phone,
             Role = new RoleDto
             {

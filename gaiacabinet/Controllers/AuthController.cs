@@ -2,6 +2,7 @@
 using gaiacabinet_api.Contracts.Errors;
 using gaiacabinet_api.Interfaces;
 using gaiacabinet_api.Options;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -25,21 +26,6 @@ public class AuthController : ControllerBase
     [ProducesResponseType(typeof(ApiErrorResponse), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> LookupAsync([FromBody] LookupRequest request, CancellationToken ct)
     {
-        if (!ModelState.IsValid || string.IsNullOrWhiteSpace(request.Email))
-        {
-            var details = ModelState
-                .Where(kv => kv.Value?.Errors.Count > 0)
-                .Select(kv => new ApiErrorDetail { Field = kv.Key, Message = kv.Value!.Errors[0].ErrorMessage })
-                .ToList();
-
-            return BadRequest(new ApiErrorResponse
-            {
-                Error = new ApiError { Code = "validation_failed", Message = "Données invalides." },
-                Details = details,
-                TraceId = HttpContext.TraceIdentifier
-            });
-        }
-        
         var result = await _auth.LookupAsync(request.Email, ct);
 
         var reponse = new LookupResponse

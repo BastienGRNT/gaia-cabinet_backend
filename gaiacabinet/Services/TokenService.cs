@@ -18,12 +18,14 @@ public sealed class TokenService : ITokenService
     private readonly AppDbContext _db;
     private readonly IClock _clock;
     private readonly AuthJwtOptions _jwt;
+    private readonly HashUtils _hashUtils;
     
-    public TokenService(AppDbContext db, IClock clock, IOptions<AuthJwtOptions> jwtOptions)
+    public TokenService(AppDbContext db, IClock clock, IOptions<AuthJwtOptions> jwtOptions, HashUtils hashUtils)
     {
         _db = db;
         _clock = clock;
         _jwt = jwtOptions.Value;
+        _hashUtils = hashUtils;
     }
 
     // Methode de géneration d'un AccessToken
@@ -60,7 +62,7 @@ public sealed class TokenService : ITokenService
     {
         Span<byte> bytes = stackalloc byte[32];
         RandomNumberGenerator.Fill(bytes);
-        return TokenUtils.Base64UrlEncode(bytes);
+        return HashUtils.Base64UrlEncode(bytes);
     }
 
     // Méthode de Hash utiliser pour ajouter le RefreshTokenHash en BDD
@@ -80,8 +82,8 @@ public sealed class TokenService : ITokenService
             throw new UnauthorizedAccessException("invalid_session_key");
 
         var now = _clock.UtcNow;
-        var incomingHash = TokenUtils.HashToken(refreshToken);
-        var incomingSessionKey = TokenUtils.HashToken(sessionKey);
+        var incomingHash = _hashUtils.HashString(refreshToken);
+        var incomingSessionKey = _hashUtils.HashString(sessionKey);
 
         var session = await _db.RefreshSessions
             .Include(s => s.User).ThenInclude(u => u.Role)
@@ -120,7 +122,7 @@ public sealed class TokenService : ITokenService
 
         // 4) Rotation du refresh : créer un nouveau RT, enregistrer, révoquer l’ancien
         var newRt = GenerateRefreshToken();
-        var newRtHash = TokenUtils.HashToken(newRt);
+        var newRtHash = _hashUtils.HashString(newRt);
         var newRtExp = now.AddDays(_jwt.RefreshTokenDays);
         
         

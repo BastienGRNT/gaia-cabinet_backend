@@ -28,13 +28,13 @@ public static class DataSeeder
 
         foreach (var u in usersToEnsure)
         {
-            if (!db.Users.Any(x => x.Mail == u.Mail))
+            if (!db.Users.Any(x => x.Email == u.Mail))
             {
                 db.Users.Add(new User
                 {
                     FirstName = u.First,
                     LastName  = u.Last,
-                    Mail      = u.Mail,
+                    Email      = u.Mail,
                     Phone     = u.Phone,
                     PasswordHash = Hash(u.Pwd),
                     RoleId    = u.RoleId,

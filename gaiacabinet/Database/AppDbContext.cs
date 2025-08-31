@@ -35,7 +35,7 @@ public class AppDbContext : DbContext
             e.HasKey(x => x.UserId);
             e.Property(x => x.FirstName).HasMaxLength(50).IsRequired();
             e.Property(x => x.LastName).HasMaxLength(50).IsRequired();
-            e.Property(x => x.Mail).HasMaxLength(250).IsRequired();
+            e.Property(x => x.Email).HasColumnType("citext").HasMaxLength(250).IsRequired();
             e.Property(x => x.Phone).HasMaxLength(50).IsRequired();
             e.Property(x => x.PasswordHash).HasMaxLength(256).IsRequired();
             e.Property(x => x.OrdreRegistrationNumber).HasMaxLength(20);
@@ -43,7 +43,7 @@ public class AppDbContext : DbContext
             e.Property(x => x.UpdatedAt).IsRequired().HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
             e.Property(x => x.Authorized).IsRequired().HasDefaultValue(true);
             
-            e.HasIndex(x => x.Mail).IsUnique();
+            e.HasIndex(x => x.Email).IsUnique();
             e.HasIndex(x => x.Phone).IsUnique();
             e.HasIndex(x => x.OrdreRegistrationNumber).IsUnique();
         });
@@ -51,30 +51,45 @@ public class AppDbContext : DbContext
         // Table PendingUser
         modelBuilder.Entity<PendingUser>(e =>
         {
+            // --- Identité ---
             e.HasKey(x => x.PendingUserId);
-            e.Property(x => x.Mail).HasMaxLength(250).IsRequired();
-            e.Property(x => x.CreatedAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
-            e.Property(x => x.ConsumedAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
-            e.Property(x => x.VerificationCodeHash).HasMaxLength(128);
-            e.Property(x => x.Attempts).HasDefaultValue(0);
-            e.Property(x => x.IsActive).HasDefaultValue(true);
-            e.Property(x => x.ExpiresAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC' + INTERVAL '7 days'");
-
+            e.Property(x => x.Email).HasColumnType("citext").HasMaxLength(250).IsRequired();
             
+            // --- Durée de vie globale ---
+            e.Property(x => x.CreatedAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'");
+            e.Property(x => x.UpdatedAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC'").ValueGeneratedOnAddOrUpdate();
+            e.Property(x => x.ConsumedAt);
+            
+            // --- Revocation du pending ---
+            e.Property(x => x.IsActive).HasDefaultValue(true);
+            e.Property(x => x.ExpiresAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC' + INTERVAL '15 days'");
+            
+            // --- Vérification par code ---
+            e.Property(x => x.VerificationCodeHash).HasMaxLength(64);
+            e.Property(x => x.VerificationCodeCreation);
+            e.Property(x => x.VerificationCodeExpiration);
+            
+            // --- Sécurité / anti-abus ---
+            e.Property(x => x.Attempts).HasDefaultValue(0);
+            e.Property(x => x.UnlockAt);
+            
+            // --- Validation finale ---
+            e.Property(x => x.ValidateTokenHash).HasMaxLength(64);
+            e.Property(x => x.ValidateTokenCreation);
+            e.Property(x => x.ValidateTokenExpiration);
 
-            e.HasIndex(x => new { x.Mail, x.IsActive }).IsUnique();
-
-            // Relation PendingUser <-1:1-> <-0:N-> Role
-            e.HasOne(x => x.Role)
+            // --- Références ---
+            e.HasOne(x => x.Role) // Relation PendingUser <-1:1-> <-0:N-> Role
                 .WithMany()
                 .HasForeignKey(x => x.RoleId)
                 .OnDelete(DeleteBehavior.Restrict);
-
-            // Relation PendingUser <-1:1-> <-0:N-> User
-            e.HasOne(x => x.InvitedByUser)
+            e.HasOne(x => x.InvitedByUser) // Relation PendingUser <-1:1-> <-0:N-> User
                 .WithMany()
                 .HasForeignKey(x => x.InvitedByUserId)
                 .OnDelete(DeleteBehavior.Restrict);
+            
+            // Index mail unique
+            e.HasIndex(x => x.Email).IsUnique();
         });
 
         modelBuilder.Entity<RefreshSession>(e =>

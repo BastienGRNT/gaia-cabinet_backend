@@ -7,6 +7,7 @@ public interface IAuthServices
     Task<LookupResult> LookupAsync(string email, CancellationToken ct);
     Task<LoginResult> LoginAsync(string email, string password, string ip, string userAcces, CancellationToken ct);
     Task<RefreshResult> RefreshAsync(string refreshToken, string sessionKey, string ip, string userAgent, CancellationToken ct);
+    Task<VerifyMailResult> VerifyMailAsync(string email, string verificationCode, CancellationToken ct);
 }
 
 public sealed record LookupResult
@@ -44,5 +45,17 @@ public sealed record RefreshResult
     {
         AccessToken = accessToken;
         RefreshToken = refreshToken;
+    }
+}
+
+public sealed record VerifyMailResult
+{
+    public string Email;
+    public string VerifyEmailToken;
+
+    public VerifyMailResult(string email, string verifyEmailToken)
+    {
+        Email = email;
+        VerifyEmailToken = verifyEmailToken;
     }
 }

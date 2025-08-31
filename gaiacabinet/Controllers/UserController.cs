@@ -37,14 +37,6 @@ public class UserController : ControllerBase
         }
 
         var user = await _userService.GetCurrentUserAsync(int.Parse(userId), ct);
-        if (user is null)
-        {
-            return Unauthorized(new ApiErrorResponse
-            {
-                Error = new ApiError { Code = "not_found", Message = "Utilisateur introuvable." },
-                TraceId = HttpContext.TraceIdentifier
-            });
-        }
 
         return Ok(user);
     }

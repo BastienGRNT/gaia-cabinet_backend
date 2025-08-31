@@ -1,8 +1,11 @@
 // Programme.cs — version originale, uniquement commentée bloc par bloc (aucune modification de code)
 
 using DotNetEnv;
+using gaiacabinet_api.Common;
+using gaiacabinet_api.Controllers;
 using gaiacabinet_api.Database;
 using gaiacabinet_api.Interfaces;
+using gaiacabinet_api.Middlewares;
 using gaiacabinet_api.Options;
 using Microsoft.EntityFrameworkCore;
 using gaiacabinet_api.Services;
@@ -32,10 +35,13 @@ public class Program
         // --- Injection de dépendances (DI) ---
         // IClock en Singleton : OK (stateless, partagé).
         builder.Services.AddSingleton<IClock, SystemClock>();
+        builder.Services.AddSingleton<HashUtils>();
         // Services applicatifs en Scoped : cohérent avec le cycle de requête HTTP.
         builder.Services.AddScoped<IAuthServices, AuthServices>();
         builder.Services.AddScoped<ITokenService, TokenService>();
         builder.Services.AddScoped<IUserService, UserService>();
+        
+        builder.Services.AddScoped<DemoService>();
         
         // --- Connexion à la base de données ---
         // Récupération de la chaîne de connexion depuis l'environnement.
@@ -56,6 +62,12 @@ public class Program
             .BindConfiguration("AuthJwt")
             .Validate(o => !string.IsNullOrWhiteSpace(o.SigningKey) && o.SigningKey.Length >= 32,
                 "AuthJwt:SigningKey manquante ou trop courte (>= 32).")
+            .ValidateOnStart();
+        
+        builder.Services.AddOptions<OtpPepperOptions>()
+            .BindConfiguration("OtpPepper")
+            .Validate(o => !string.IsNullOrWhiteSpace(o.OtpPepper) && o.OtpPepper.Length >= 32,
+                "OtpPepper manquant ou trop court (>= 32).")
             .ValidateOnStart();
         
         // Récupère les options JWT pour initialiser l'authentification.
@@ -92,6 +104,15 @@ public class Program
         
         // Construction de l'application (pipeline).
         var app = builder.Build();
+        
+        // Swagger uniquement en environnement de développement.
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI();
+        }
+        
+        app.UseMiddleware<ErrorHandlingMiddleware>();
 
         // Active la politique CORS avant les middlewares d'auth.
         app.UseCors("FrontDev");
@@ -100,13 +121,6 @@ public class Program
         // Authentification puis autorisation (ordre correct).
         app.UseAuthentication();
         app.UseAuthorization();
-
-        // Swagger uniquement en environnement de développement.
-        if (app.Environment.IsDevelopment())
-        {
-            app.UseSwagger();
-            app.UseSwaggerUI();
-        }
         
         // Mappe les contrôleurs (routes REST).
         app.MapControllers();

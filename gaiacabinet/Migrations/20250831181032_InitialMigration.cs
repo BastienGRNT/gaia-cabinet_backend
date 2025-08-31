@@ -7,11 +7,14 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace gaiacabinet_api.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialCreate : Migration
+    public partial class InitialMigration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.AlterDatabase()
+                .Annotation("Npgsql:PostgresExtension:citext", ",,");
+
             migrationBuilder.CreateTable(
                 name: "Roles",
                 columns: table => new
@@ -33,13 +36,13 @@ namespace gaiacabinet_api.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     FirstName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     LastName = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    Mail = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    Email = table.Column<string>(type: "citext", maxLength: 250, nullable: false),
                     Phone = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    PasswordHash = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
+                    PasswordHash = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     OrdreRegistrationNumber = table.Column<string>(type: "character varying(20)", maxLength: 20, nullable: true),
                     DaysAdvance = table.Column<short>(type: "smallint", nullable: true),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
-                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW() AT TIME ZONE 'UTC'"),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW() AT TIME ZONE 'UTC'"),
                     LastLogin = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     Authorized = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
                     RoleId = table.Column<int>(type: "integer", nullable: false)
@@ -61,17 +64,22 @@ namespace gaiacabinet_api.Migrations
                 {
                     PendingUserId = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    Mail = table.Column<string>(type: "character varying(250)", maxLength: 250, nullable: false),
+                    Email = table.Column<string>(type: "citext", maxLength: 250, nullable: false),
                     RoleId = table.Column<int>(type: "integer", nullable: false),
                     InvitedByUserId = table.Column<int>(type: "integer", nullable: false),
-                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValue: new DateTimeOffset(new DateTime(2025, 8, 16, 0, 28, 3, 977, DateTimeKind.Unspecified).AddTicks(2980), new TimeSpan(0, 0, 0, 0, 0))),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW() AT TIME ZONE 'UTC'"),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW() AT TIME ZONE 'UTC'"),
                     ConsumedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    VerificationCodeHash = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
+                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW() AT TIME ZONE 'UTC' + INTERVAL '15 days'"),
+                    VerificationCodeHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
                     VerificationCodeCreation = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
                     VerificationCodeExpiration = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
-                    Attempts = table.Column<int>(type: "integer", nullable: false),
-                    IsActive = table.Column<bool>(type: "boolean", nullable: false, defaultValue: true),
-                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValue: new DateTimeOffset(new DateTime(2025, 8, 26, 2, 28, 3, 975, DateTimeKind.Unspecified).AddTicks(4225), new TimeSpan(0, 2, 0, 0, 0)))
+                    Attempts = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
+                    UnlockAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    ValidateTokenHash = table.Column<string>(type: "character varying(64)", maxLength: 64, nullable: true),
+                    ValidateTokenCreation = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    ValidateTokenExpiration = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -90,27 +98,72 @@ namespace gaiacabinet_api.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "RefreshSessions",
+                columns: table => new
+                {
+                    SessionId = table.Column<int>(type: "integer", nullable: false)
+                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
+                    UserId = table.Column<int>(type: "integer", nullable: false),
+                    TokenHash = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    SessionKeyHash = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    CreatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW() AT TIME ZONE 'UTC'"),
+                    UpdatedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false, defaultValueSql: "NOW() AT TIME ZONE 'UTC'"),
+                    ExpiresAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: false),
+                    RevokedAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true),
+                    RevokedByUserId = table.Column<int>(type: "integer", nullable: true),
+                    LastSeenAt = table.Column<DateTimeOffset>(type: "timestamp with time zone", nullable: true, defaultValueSql: "NOW() AT TIME ZONE 'UTC'"),
+                    LastIp = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    LastUserAgent = table.Column<string>(type: "character varying(400)", maxLength: 400, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RefreshSessions", x => x.SessionId);
+                    table.ForeignKey(
+                        name: "FK_RefreshSessions_Users_RevokedByUserId",
+                        column: x => x.RevokedByUserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.SetNull);
+                    table.ForeignKey(
+                        name: "FK_RefreshSessions_Users_UserId",
+                        column: x => x.UserId,
+                        principalTable: "Users",
+                        principalColumn: "UserId",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PendingUsers_Email",
+                table: "PendingUsers",
+                column: "Email",
+                unique: true);
+
             migrationBuilder.CreateIndex(
                 name: "IX_PendingUsers_InvitedByUserId",
                 table: "PendingUsers",
                 column: "InvitedByUserId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_PendingUsers_Mail",
-                table: "PendingUsers",
-                column: "Mail",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_PendingUsers_Mail_IsActive",
-                table: "PendingUsers",
-                columns: new[] { "Mail", "IsActive" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_PendingUsers_RoleId",
                 table: "PendingUsers",
                 column: "RoleId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshSessions_RevokedByUserId",
+                table: "RefreshSessions",
+                column: "RevokedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshSessions_TokenHash",
+                table: "RefreshSessions",
+                column: "TokenHash",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RefreshSessions_UserId",
+                table: "RefreshSessions",
+                column: "UserId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Roles_Label",
@@ -119,9 +172,9 @@ namespace gaiacabinet_api.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Users_Mail",
+                name: "IX_Users_Email",
                 table: "Users",
-                column: "Mail",
+                column: "Email",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -147,6 +200,9 @@ namespace gaiacabinet_api.Migrations
         {
             migrationBuilder.DropTable(
                 name: "PendingUsers");
+
+            migrationBuilder.DropTable(
+                name: "RefreshSessions");
 
             migrationBuilder.DropTable(
                 name: "Users");
