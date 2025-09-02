@@ -94,11 +94,16 @@ Un fichier `.env.example` sera fourni à la racine du projet pour faciliter la c
 
 ## 🚀 Lancement
 
+Dans Rider/VSCode, assurez-vous que le **Working Directory** pointe sur la racine du projet : /gaia-cabinet_backend et non /gaia-cabinet_backend/GaiaSolution.Api
+
 Une fois la configuration terminée, lancez l'application :
+Attention le .env étant à la racine il faut executer l'application (ld .dll) ou le .env ce situe
 
 ```bash
-cd GaiaSolution.Application
-dotnet run
+cd GaiaSolution.Api
+dotnet publish -c Release -o out
+cd ..
+dotnet ./GaiaSolution.Api/out/GaiaSolution.Api.dll
 ```
 
 L'API sera accessible sur `http://localhost:5111` (ou le port configuré).
