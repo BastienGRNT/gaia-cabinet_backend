@@ -12,16 +12,14 @@ public sealed class EmailNormalized
     public static EmailNormalized From(string email)
     {
         if (string.IsNullOrWhiteSpace(email))
-            throw new InvalidEmailException("Email requis.",
-                details: new Dictionary<string, object?> { ["reason"] = "Email vide" });
+            throw new InvalidEmailException("Email requis.");
 
         var normalized = email.Trim().ToLowerInvariant();
 
         try { _ = new MailAddress(normalized); }
         catch
         {
-            throw new InvalidEmailException("Format d'email invalide.",
-                details: new Dictionary<string, object?> { ["reason"] = "Format d'email invalide" });
+            throw new InvalidEmailException("Format d'email invalide.");
         }
 
         return new EmailNormalized(normalized);

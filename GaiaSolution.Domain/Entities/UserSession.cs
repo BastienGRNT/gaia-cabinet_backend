@@ -1,20 +1,19 @@
-﻿namespace GaiaSolution.Domain.Entities;
+﻿using GaiaSolution.Domain.Base;
 
-public class UserSession
+namespace GaiaSolution.Domain.Entities;
+
+public class UserSession : AuditableEntity
 {
-    public int SessionId { get; set; }
-
     public int UserId { get; set; }
     public User User { get; set; } = null!;
 
     public string RefreshTokenHash { get; set; } = null!;
+    
     public Guid DeviceId { get; set; } 
     
-    public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset ExpiresAt { get; set; }
     
     public DateTimeOffset? RevokedAt { get; set; }
-    
     public int? RevokedByUserId { get; set; }
     public User? RevokedByUser { get; set; }
     

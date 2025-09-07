@@ -1,8 +1,8 @@
-﻿namespace GaiaSolution.Domain.Entities;
+﻿using GaiaSolution.Domain.Base;
 
-public class Role
+namespace GaiaSolution.Domain.Entities;
+
+public class Role : BaseEntity
 {
-    public int RoleId { get; set; }
-    
     public string RoleName { get; set; } = null!;
 }

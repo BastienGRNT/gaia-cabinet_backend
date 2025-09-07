@@ -1,31 +1,27 @@
-﻿using GaiaSolution.Domain.ValueObjects;
+﻿using GaiaSolution.Domain.Base;
+using GaiaSolution.Domain.ValueObjects;
 
 namespace GaiaSolution.Domain.Entities;
 
 public enum StatusEnum { Pending, Active, Suspended, Banned, Deleted }
 
-public class User
+public class User : BaseEntity
 {
-    public int UserId { get; set; }
-    
-    public int RoleId { get; set; }
-    public Role Role { get; set; } = null!;
-    
     public StatusEnum Status { get; set; }
     
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     
-    //TODO : Ne pas oublier le value converter
-    public EmailNormalized Email { get; set; } = null!;
-    public string? PhoneNumber { get; set; }
+    public EmailNormalized EmailNormalized { get; set; } = null!;
+    public PhoneNormalized PhoneNormalized { get; set; } = null!;
     
-    public DateTimeOffset CreatedAt { get; set; }
-    public DateTimeOffset UpdatedAt { get; set; }
-    public DateTimeOffset? LastLogin { get; set; }
+    public int RoleId { get; set; }
+    public Role Role { get; set; } = null!;
     
-    public DoctorProfile? DoctorProfile { get; set; }
-    public UserCredential? Credential { get; set; } 
-    public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
-    public ICollection<UserLoginHistory> LoginHistory { get; set; } = new List<UserLoginHistory>();
+    public DoctorProfile? UserDoctorProfile { get; set; }
+    public UserCredential? UserCredential { get; set; } 
+    public ICollection<UserSession> UserSessions { get; set; } = new List<UserSession>();
+    public ICollection<UserSession> UserSessionsRevoked { get; set; } = new List<UserSession>();
+    public ICollection<UserLoginHistory> UserLoginHistory { get; set; } = new List<UserLoginHistory>();
+    public ICollection<EmailVerification> UserEmailVerification { get; set; } = new List<EmailVerification>();
 }

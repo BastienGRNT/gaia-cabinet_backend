@@ -1,4 +1,6 @@
-﻿namespace GaiaSolution.Domain.Entities;
+﻿using GaiaSolution.Domain.ValueObjects;
+
+namespace GaiaSolution.Domain.Entities;
 
 public class DoctorProfile
 {
@@ -7,8 +9,8 @@ public class DoctorProfile
     
     public string PostalAddress { get; set; } = null!;
     
-    public string RegistrationNumber { get; set; } = null!;
-    public string ProfessionalEmail { get; set; } = null!;
+    public string Rpps { get; set; } = null!;
+    public EmailNormalized Mss { get; set; } = null!;
     
-    public short? DaysAdvance { get; set; }
+    public int DaysAdvance { get; set; }
 }
