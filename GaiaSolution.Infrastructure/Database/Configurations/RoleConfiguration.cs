@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace GaiaSolution.Infrastructure.Configurations;
+namespace GaiaSolution.Infrastructure.Database.Configurations;
 
 public class RoleConfiguration : IEntityTypeConfiguration<Role>
 {

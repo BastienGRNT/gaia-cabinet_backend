@@ -1,4 +1,5 @@
 using DotNetEnv;
+using GaiaSolution.Infrastructure.DI;
 
 namespace GaiaSolution.Api;
 
@@ -18,6 +19,9 @@ public class Program
         builder.Services.AddControllers();
         builder.Services.AddEndpointsApiExplorer();
         builder.Services.AddSwaggerGen();
+        
+        builder.Services.AddInfrastructure(builder.Configuration);
+
 
         var app = builder.Build();
 

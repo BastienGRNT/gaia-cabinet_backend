@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace GaiaSolution.Infrastructure.Configurations;
+namespace GaiaSolution.Infrastructure.Database.Configurations;
 
 public sealed class UserCredentialConfiguration : IEntityTypeConfiguration<UserCredential>
 {
@@ -27,6 +27,6 @@ public sealed class UserCredentialConfiguration : IEntityTypeConfiguration<UserC
 
         builder.Property(uc => uc.LockoutUntil);
         
-        builder.HasIndex(uc => uc.UserId);
+        builder.HasIndex(uc => uc.UserId).IsUnique();
     }
 }

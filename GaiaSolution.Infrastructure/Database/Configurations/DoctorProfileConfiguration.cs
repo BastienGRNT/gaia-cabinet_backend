@@ -3,7 +3,7 @@ using GaiaSolution.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace GaiaSolution.Infrastructure.Configurations;
+namespace GaiaSolution.Infrastructure.Database.Configurations;
 
 public class DoctorProfileConfiguration : IEntityTypeConfiguration<DoctorProfile>
 {
@@ -32,7 +32,7 @@ public class DoctorProfileConfiguration : IEntityTypeConfiguration<DoctorProfile
             .HasDefaultValue(0)
             .IsRequired();
 
-        builder.HasIndex(d => d.UserId);
+        builder.HasIndex(d => d.UserId).IsUnique();
         builder.HasIndex(d => d.Rpps).IsUnique();
         builder.HasIndex(d => d.Mss).IsUnique();
     }

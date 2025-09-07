@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace GaiaSolution.Infrastructure.Configurations.Base;
+namespace GaiaSolution.Infrastructure.Base;
 
 public class BaseEntityConfiguration<T> : IEntityTypeConfiguration<T>
     where T : BaseEntity

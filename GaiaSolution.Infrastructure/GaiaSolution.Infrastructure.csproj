@@ -11,6 +11,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\GaiaSolution.Application\GaiaSolution.Application.csproj" />
       <ProjectReference Include="..\GaiaSolution.Domain\GaiaSolution.Domain.csproj" />
     </ItemGroup>
 

@@ -14,4 +14,8 @@
         <None Include="..\.env.development" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\GaiaSolution.Infrastructure\GaiaSolution.Infrastructure.csproj" />
+    </ItemGroup>
+
 </Project>

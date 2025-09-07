@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using GaiaSolution.Domain.Entities;
 
-namespace GaiaSolution.Infrastructure.Configurations;
+namespace GaiaSolution.Infrastructure.Database.Configurations;
 
 public sealed class UserLoginHistoryConfiguration : IEntityTypeConfiguration<UserLoginHistory>
 {
@@ -22,13 +22,15 @@ public sealed class UserLoginHistoryConfiguration : IEntityTypeConfiguration<Use
             .IsRequired();
 
         builder.Property(ul => ul.IpAddress)
-            .HasMaxLength(256)
+            .HasMaxLength(45)
             .HasDefaultValue(null);
         
         builder.Property(ul => ul.UserAgent)
-            .HasMaxLength(256)
+            .HasMaxLength(512)
             .HasDefaultValue(null);
 
         builder.Property(ul => ul.UserId);
+        
+        builder.HasIndex(ul => ul.UserId);
     }
 }

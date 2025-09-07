@@ -4,7 +4,7 @@ using GaiaSolution.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace GaiaSolution.Infrastructure.Configurations;
+namespace GaiaSolution.Infrastructure.Database.Configurations;
 
 public sealed class UserConfiguration :IEntityTypeConfiguration<User>
 {
@@ -29,7 +29,7 @@ public sealed class UserConfiguration :IEntityTypeConfiguration<User>
             .HasConversion(
                 v => v.Value,
                 u => PhoneNormalized.From(u))
-            .HasMaxLength(12)
+            .HasMaxLength(15)
             .IsRequired();
         
         builder.HasOne(u => u.Role)
@@ -37,7 +37,6 @@ public sealed class UserConfiguration :IEntityTypeConfiguration<User>
             .HasForeignKey(u => u.RoleId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        builder.HasIndex(u => u.Id);
         builder.HasIndex(u => u.EmailNormalized).IsUnique();
         builder.HasIndex(u => u.PhoneNormalized).IsUnique();
     }
