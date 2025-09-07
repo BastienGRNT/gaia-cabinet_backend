@@ -1,4 +1,5 @@
 ﻿using GaiaSolution.Domain.Entities;
+using GaiaSolution.Domain.Enums;
 using GaiaSolution.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

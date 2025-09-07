@@ -1,8 +1,7 @@
 ﻿using GaiaSolution.Domain.Base;
+using GaiaSolution.Domain.Enums;
 
 namespace GaiaSolution.Domain.Entities;
-
-public enum PurposeEnum { ModifyPassword, EmailVerification }
 
 public class EmailVerification : BaseEntity
 {

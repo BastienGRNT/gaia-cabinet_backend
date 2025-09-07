@@ -1,9 +1,8 @@
 ﻿using GaiaSolution.Domain.Base;
+using GaiaSolution.Domain.Enums;
 using GaiaSolution.Domain.ValueObjects;
 
 namespace GaiaSolution.Domain.Entities;
-
-public enum StatusEnum { Pending, Active, Suspended, Banned, Deleted }
 
 public class User : BaseEntity
 {
