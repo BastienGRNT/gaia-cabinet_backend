@@ -6,7 +6,7 @@ namespace GaiaSolution.Domain.Entities;
 
 public class User : BaseEntity
 {
-    public StatusEnum Status { get; set; }
+    public UserStatus UserStatus { get; set; }
     
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
@@ -17,10 +17,10 @@ public class User : BaseEntity
     public int RoleId { get; set; }
     public Role Role { get; set; } = null!;
     
-    public DoctorProfile? UserDoctorProfile { get; set; }
-    public UserCredential? UserCredential { get; set; } 
-    public ICollection<UserSession> UserSessions { get; set; } = new List<UserSession>();
-    public ICollection<UserSession> UserSessionsRevoked { get; set; } = new List<UserSession>();
-    public ICollection<UserLoginHistory> UserLoginHistory { get; set; } = new List<UserLoginHistory>();
-    public ICollection<EmailVerification> UserEmailVerification { get; set; } = new List<EmailVerification>();
+    public DoctorProfile? DoctorProfile { get; set; }
+    public UserCredential? Credential { get; set; } 
+    public ICollection<UserSession> Sessions { get; set; } = new List<UserSession>();
+    public ICollection<UserSession> SessionsRevoked { get; set; } = new List<UserSession>();
+    public ICollection<UserLoginHistory> LoginHistory { get; set; } = new List<UserLoginHistory>();
+    public ICollection<EmailVerification> EmailVerification { get; set; } = new List<EmailVerification>();
 }

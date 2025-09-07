@@ -10,10 +10,10 @@ public sealed class UserConfiguration :IEntityTypeConfiguration<User>
 {
     public void Configure(EntityTypeBuilder<User> builder)
     {
-        builder.Property(u => u.Status)
+        builder.Property(u => u.UserStatus)
             .HasConversion(
                 u => u.ToString(),
-                u => (StatusEnum)Enum.Parse(typeof(StatusEnum), u));
+                u => (UserStatus)Enum.Parse(typeof(UserStatus), u));
         
         builder.Property(u => u.FirstName).HasMaxLength(50);
         builder.Property(u => u.LastName).HasMaxLength(50);

@@ -10,13 +10,13 @@ public class EmailVerificationConfiguration : IEntityTypeConfiguration<EmailVeri
     public void Configure(EntityTypeBuilder<EmailVerification> builder)
     {
         builder.HasOne(e => e.User)
-            .WithMany(u => u.UserEmailVerification)
+            .WithMany(u => u.EmailVerification)
             .HasForeignKey(e => e.UserId)
             .OnDelete(DeleteBehavior.Restrict);
         
-        builder.Property(e => e.Purpose)
+        builder.Property(e => e.EmailVerificationPurpose)
             .HasConversion(e => e.ToString(),
-                e => (PurposeEnum)Enum.Parse(typeof(PurposeEnum), e));
+                e => (EmailVerificationPurpose)Enum.Parse(typeof(EmailVerificationPurpose), e));
         
         builder.Property(e => e.OtpHash)
             .HasMaxLength(128)

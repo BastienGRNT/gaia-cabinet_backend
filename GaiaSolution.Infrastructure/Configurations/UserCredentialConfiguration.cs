@@ -9,7 +9,7 @@ public sealed class UserCredentialConfiguration : IEntityTypeConfiguration<UserC
     public void Configure(EntityTypeBuilder<UserCredential> builder)
     {
         builder.HasOne(u => u.User)
-            .WithOne(uc => uc.UserCredential)
+            .WithOne(uc => uc.Credential)
             .HasForeignKey<UserCredential>(u => u.UserId)
             .OnDelete(DeleteBehavior.Cascade);
         

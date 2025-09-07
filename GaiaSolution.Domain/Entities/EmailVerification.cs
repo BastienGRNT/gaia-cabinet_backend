@@ -8,7 +8,7 @@ public class EmailVerification : BaseEntity
     public int UserId { get; set; }
     public User User { get; set; } = null!;
     
-    public PurposeEnum Purpose { get; set; }
+    public EmailVerificationPurpose EmailVerificationPurpose { get; set; }
     
     public string OtpHash { get; set; } = null!;
     

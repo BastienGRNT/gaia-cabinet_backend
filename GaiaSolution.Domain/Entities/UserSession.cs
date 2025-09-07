@@ -2,7 +2,7 @@
 
 namespace GaiaSolution.Domain.Entities;
 
-public class UserSession : AuditableEntity
+public class UserSession : BaseAuditableEntity
 {
     public int UserId { get; set; }
     public User User { get; set; } = null!;

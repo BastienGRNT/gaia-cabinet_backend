@@ -9,7 +9,7 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
     public void Configure(EntityTypeBuilder<UserSession> builder)
     {
         builder.HasOne(u => u.User)
-            .WithMany(us => us.UserSessions)
+            .WithMany(us => us.Sessions)
             .HasForeignKey(u => u.UserId)
             .OnDelete(DeleteBehavior.Restrict);
         
@@ -20,7 +20,7 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
         builder.Property(us => us.ExpiresAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC' + INTERVAL '15 days'").IsRequired();
         
         builder.HasOne(u => u.User)
-            .WithMany(us => us.UserSessionsRevoked)
+            .WithMany(us => us.SessionsRevoked)
             .HasForeignKey(u => u.RevokedByUserId)
             .OnDelete(DeleteBehavior.Restrict);
         

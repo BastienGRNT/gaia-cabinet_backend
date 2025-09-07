@@ -9,7 +9,7 @@ public sealed class UserLoginHistoryConfiguration : IEntityTypeConfiguration<Use
     public void Configure(EntityTypeBuilder<UserLoginHistory> builder)
     {
         builder.HasOne(ul => ul.User)
-            .WithMany(u => u.UserLoginHistory)
+            .WithMany(u => u.LoginHistory)
             .HasForeignKey(ul => ul.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 

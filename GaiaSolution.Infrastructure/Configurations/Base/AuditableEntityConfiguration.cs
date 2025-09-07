@@ -2,10 +2,10 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace GaiaSolution.Infrastructure.Configurations;
+namespace GaiaSolution.Infrastructure.Configurations.Base;
 
-public class AuditEntityConfiguration<T> : IEntityTypeConfiguration<T>
-    where T : AuditableEntity
+public class AuditableEntityConfiguration<T> : IEntityTypeConfiguration<T>
+    where T : BaseAuditableEntity
 {
     public void Configure(EntityTypeBuilder<T> builder)
     {
