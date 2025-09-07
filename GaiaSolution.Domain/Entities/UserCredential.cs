@@ -8,6 +8,6 @@ public class UserCredential
     public string PasswordHash { get; set; } = null!;
     public DateTimeOffset PasswordUpdatedAt { get; set; }
 
-    public int FailedLoginCount { get; set; } = 0;
+    public int FailedLoginCount { get; set; }
     public DateTimeOffset? LockoutUntil { get; set; }
 }

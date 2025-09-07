@@ -3,19 +3,20 @@
 namespace GaiaSolution.Domain.Entities;
 
 public enum StatusEnum { Pending, Active, Suspended, Banned, Deleted }
-public enum RoleEnum { Admin, Doctor, Cleaning }
 
 public class User
 {
     public int UserId { get; set; }
     
-    public RoleEnum Role { get; set; }
+    public int RoleId { get; set; }
+    public Role Role { get; set; } = null!;
+    
     public StatusEnum Status { get; set; }
     
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
     
-    //TODO : Ne pas oublier le value converter - et réflechir sur garder ca ou non
+    //TODO : Ne pas oublier le value converter
     public EmailNormalized Email { get; set; } = null!;
     public string? PhoneNumber { get; set; }
     

@@ -2,7 +2,7 @@
 
 public class UserSession
 {
-    public Guid SessionId { get; set; }
+    public int SessionId { get; set; }
 
     public int UserId { get; set; }
     public User User { get; set; } = null!;
