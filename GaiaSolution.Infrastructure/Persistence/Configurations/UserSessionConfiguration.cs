@@ -19,7 +19,7 @@ public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSess
         
         builder.Property(us => us.ExpiresAt).HasDefaultValueSql("NOW() AT TIME ZONE 'UTC' + INTERVAL '15 days'").IsRequired();
         
-        builder.HasOne(us => us.User)
+        builder.HasOne(us => us.RevokedByUser)
             .WithMany(u => u.SessionsRevoked)
             .HasForeignKey(us => us.RevokedByUserId)
             .OnDelete(DeleteBehavior.Restrict);

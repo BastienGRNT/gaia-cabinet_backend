@@ -11,18 +11,18 @@ public class BaseRepository<TEntity, TContext> : IBaseRepository<TEntity>
     where TEntity : BaseEntity
     where TContext : CoreDbContext
 {
-    private readonly TContext _dbContext;
+    protected readonly TContext DbContext;
 
     public BaseRepository(TContext context)
     {
-        _dbContext = context;
+        DbContext = context;
     }
 
     public async Task<TEntity> GetById(int id)
     {
         try
         {
-            var rep = await _dbContext.Set<TEntity>().FindAsync(id);
+            var rep = await DbContext.Set<TEntity>().FindAsync(id);
             if (rep != null)
                 return rep;
             throw new InvalidAddException();
@@ -37,7 +37,7 @@ public class BaseRepository<TEntity, TContext> : IBaseRepository<TEntity>
     {
         try
         {
-            return await _dbContext.Set<TEntity>().AsNoTracking().ToListAsync();
+            return await DbContext.Set<TEntity>().AsNoTracking().ToListAsync();
         }
         catch (Exception ex)
         {
@@ -49,7 +49,7 @@ public class BaseRepository<TEntity, TContext> : IBaseRepository<TEntity>
     {
         try
         {
-            return await _dbContext.Set<TEntity>().Where(where).AsNoTracking().ToListAsync();
+            return await DbContext.Set<TEntity>().Where(where).AsNoTracking().ToListAsync();
         }
         catch (Exception ex)
         {
