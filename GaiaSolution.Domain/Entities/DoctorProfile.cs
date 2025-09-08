@@ -1,8 +1,9 @@
-﻿using GaiaSolution.Domain.ValueObjects;
+﻿using GaiaSolution.Domain.Base;
+using GaiaSolution.Domain.ValueObjects;
 
 namespace GaiaSolution.Domain.Entities;
 
-public class DoctorProfile
+public class DoctorProfile : BaseEntity
 {
     public int UserId { get; set; }
     public User User { get; set; } = null!;

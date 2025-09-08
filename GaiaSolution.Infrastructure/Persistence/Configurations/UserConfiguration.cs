@@ -4,7 +4,7 @@ using GaiaSolution.Domain.ValueObjects;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace GaiaSolution.Infrastructure.Database.Configurations;
+namespace GaiaSolution.Infrastructure.Persistence.Configurations;
 
 public sealed class UserConfiguration :IEntityTypeConfiguration<User>
 {

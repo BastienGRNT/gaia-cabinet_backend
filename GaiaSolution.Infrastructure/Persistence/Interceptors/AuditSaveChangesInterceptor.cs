@@ -3,7 +3,7 @@ using GaiaSolution.Domain.Base;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 
-namespace GaiaSolution.Infrastructure.Database.Interceptors;
+namespace GaiaSolution.Infrastructure.Persistence.Interceptors;
 
 public class AuditSaveChangesInterceptor : SaveChangesInterceptor
 {

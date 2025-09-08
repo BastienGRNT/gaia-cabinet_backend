@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
-namespace GaiaSolution.Infrastructure.Database.Configurations;
+namespace GaiaSolution.Infrastructure.Persistence.Configurations;
 
 public sealed class UserSessionConfiguration : IEntityTypeConfiguration<UserSession>
 {

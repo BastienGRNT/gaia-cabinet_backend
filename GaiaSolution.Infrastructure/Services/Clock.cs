@@ -1,6 +1,6 @@
 ﻿using GaiaSolution.Application.Base.Interfaces;
 
-namespace GaiaSolution.Infrastructure.Base;
+namespace GaiaSolution.Infrastructure.Services;
 
 public sealed class Clock : IClock
 {

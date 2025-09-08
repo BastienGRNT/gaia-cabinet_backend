@@ -1,6 +1,8 @@
-﻿namespace GaiaSolution.Domain.Entities;
+﻿using GaiaSolution.Domain.Base;
 
-public class UserCredential
+namespace GaiaSolution.Domain.Entities;
+
+public class UserCredential : BaseEntity
 {
     public int UserId { get; set; }
     public User User { get; set; } = null!;

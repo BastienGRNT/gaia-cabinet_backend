@@ -2,7 +2,7 @@
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using GaiaSolution.Domain.Entities;
 
-namespace GaiaSolution.Infrastructure.Database.Configurations;
+namespace GaiaSolution.Infrastructure.Persistence.Configurations;
 
 public sealed class UserLoginHistoryConfiguration : IEntityTypeConfiguration<UserLoginHistory>
 {
